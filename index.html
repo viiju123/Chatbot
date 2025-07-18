@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Learning Assistant</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f0f0f0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: auto;
+    }
+
+    #chat {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      height: 400px;
+      overflow-y: auto;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 80%;
+    }
+
+    .user {
+      background: #d0ebff;
+      text-align: right;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #e6ffe6;
+      text-align: left;
+      margin-right: auto;
+    }
+
+    
+    button {
+      padding: 10px;
+     width: 80%;
+      margin-top: 10px;
+    }
+
+  
+    .inputs{
+      width: 100%;
+      padding-top: 10px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    .butto button {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-top: 10px;
+      background-color: navy;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="chat">
+      <div class="message bot">👋 Hi! What would you like to learn today?</div>
+    </div>
+    <div class="inputs"><input type="text" id="userInput" placeholder="e.g., I want to learn React" /></div>
+
+    <div class="butto"> <button onclick="sendMessage()">Send</button></div>
+   
+
+  </div>
+  <script>
+    const API_KEY = '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'; // <- Paste your OpenRouter key here
+
+    const systemPrompt = `
+You are a friendly learning assistant.
+1. Ask the user what they want to learn (e.g., React, Python, HTML).
+2. Ask 3–5 follow-up questions to understand their knowledge level.
+3. Based on answers, identify their level: Beginner / Intermediate / Advanced.
+4. Recommend free video resources and links like MDN, FreeCodeCamp, YouTube.
+Always keep responses short, simple, and encouraging.
+`;
+
+    const chatBox = document.getElementById("chat");
+    let messages = [{ role: "system", content: systemPrompt }];
+
+    function appendMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.className = "message " + sender;
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      appendMessage(userText, "user");
+      messages.push({ role: "user", content: userText });
+      input.value = "";
+
+      appendMessage("Typing...", "bot");
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-3.5-turbo",
+            messages: messages
+          })
+        });
+
+        const data = await response.json();
+        const reply = data.choices[0].message.content;
+        messages.push({ role: "assistant", content: reply });
+
+        // remove "Typing..." message
+        const bots = document.querySelectorAll(".bot");
+        if (bots.length) bots[bots.length - 1].remove();
+
+        appendMessage(reply, "bot");
+      } catch (error) {
+        console.error(error);
+        appendMessage("⚠️ Error talking to AI", "bot");
+      }
+    }
+  </script>
+</body>
+
+</html>
